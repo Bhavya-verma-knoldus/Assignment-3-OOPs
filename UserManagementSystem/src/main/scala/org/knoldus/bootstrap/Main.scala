@@ -16,14 +16,17 @@
 
 package org.knoldus.bootstrap
 
-import org.knoldus.db.{UserDb, DAO}
+import org.knoldus.db.{DAO, UserDb}
 import org.knoldus.models.{User, UserType}
 import org.knoldus.operations.UserOperations
+import org.knoldus.validator.{EmailValidator, MobileNoValidator}
 
 object Main extends App{
 
   val userDb: DAO[User] = new UserDb
-  val userOperations = new UserOperations(userDb)
+  val emailValidator = new EmailValidator
+  val mobileNoValidator = new MobileNoValidator
+  val userOperations = new UserOperations(userDb,emailValidator,mobileNoValidator)
 
   //Creating object of user as admin and customer to add them to the ListBuffer
   val admin = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
@@ -63,3 +66,4 @@ object Main extends App{
 
   print(userOperations.getById(customerId) + "\n")
 }
+

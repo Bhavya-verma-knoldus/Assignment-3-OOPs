@@ -45,9 +45,7 @@ class UserDb extends DAO[User]{
   }
 
   override def getAll: List[User] = {
-
-    /*Throws exception when list is empty*/
-    if(listBuffer.toList != Nil) listBuffer.toList else throw new NoSuchElementException("No user found")
+    listBuffer.toList
   }
 
   override def update(id: UUID, updatedUser: User): Boolean = {
@@ -64,11 +62,11 @@ class UserDb extends DAO[User]{
     if(listBuffer.nonEmpty) { listBuffer.remove(0,listBuffer.length); true } else false
   }
 
-  def filterListById(id: UUID): List[User] = {
-    listBuffer.filter(listBuffer => if(listBuffer.id.compareTo(Some(id)) == 0) true else false).toList
+  private def filterListById(id: UUID): List[User] = {
+    listBuffer.filter(listBuffer => listBuffer.id.compareTo(Some(id)) == 0).toList
   }
 
-  def findIndexById(id: UUID): Int = {
+  private def findIndexById(id: UUID): Int = {
     val list = filterListById(id)
     if(list != Nil) listBuffer.indexOf(list.head) else -1
   }

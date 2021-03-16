@@ -22,10 +22,7 @@ import org.knoldus.validator.{EmailValidator, MobileNoValidator}
 
 import java.util.UUID
 
-class UserOperations(userDb: DAO[User]) {
-
-  val emailValidator = new EmailValidator
-  val mobileNoValidator = new MobileNoValidator
+class UserOperations(userDb: DAO[User],emailValidator: EmailValidator,mobileNoValidator: MobileNoValidator) {
 
   def add(user: User): UUID ={
 
