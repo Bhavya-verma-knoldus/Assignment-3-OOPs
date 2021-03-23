@@ -21,40 +21,35 @@ import org.knoldus.models.User
 import java.util.UUID
 import scala.collection.mutable.ListBuffer
 import scala.math.Ordered.orderingToOrdered
+import scala.util.{Failure, Success, Try}
 
 class UserDb extends DAO[User]{
 
-  /*Creating mutable data structure for storage*/
   private val listBuffer = new ListBuffer[User]()
 
   override def add(user: User): UUID = {
-    val uuid = UUID.randomUUID()
-    user match {
-      case User(None, userName, userType, password, age, emailId, mobileNo, address) => listBuffer += user.copy(id=Some(uuid)); uuid
-
-      /*Throws exception when UUID is sent within the object*/
-      case User(Some(_),_,_,_,_,_,_,_) => throw new RuntimeException("Invalid operation")
+    Try { listBuffer.append(user) } match {
+      case Success(_) => listBuffer.last.id.get
+      case Failure(_) => throw new RuntimeException("Invalid Operation")
     }
   }
 
   override def getById(id: UUID): List[User] = {
-    val list = filterListById(id)
-
-    /*Throws exception when user is not found*/
-    if(list != Nil) list else throw new NoSuchElementException("User does not exist")
+    val list = filterListById(Some(id))
+    if(list != Nil) list else throw new RuntimeException("User does not exist")
   }
 
   override def getAll: List[User] = {
     listBuffer.toList
   }
 
-  override def update(id: UUID, updatedUser: User): Boolean = {
+  override def update(id: Option[UUID], updatedUser: User): Boolean = {
     val index = findIndexById(id)
     if(index != -1) { listBuffer.update(index,updatedUser); true } else false
   }
 
   override def deleteById(id: UUID): Boolean = {
-    val index = findIndexById(id)
+    val index = findIndexById(Some(id))
     if(index != -1) { listBuffer.remove(index); true } else false
   }
 
@@ -62,11 +57,11 @@ class UserDb extends DAO[User]{
     if(listBuffer.nonEmpty) { listBuffer.remove(0,listBuffer.length); true } else false
   }
 
-  private def filterListById(id: UUID): List[User] = {
-    listBuffer.filter(listBuffer => listBuffer.id.compareTo(Some(id)) == 0).toList
+  private def filterListById(id: Option[UUID]): List[User] = {
+    listBuffer.filter(listBuffer => listBuffer.id.compareTo(id) == 0).toList
   }
 
-  private def findIndexById(id: UUID): Int = {
+  private def findIndexById(id: Option[UUID]): Int = {
     val list = filterListById(id)
     if(list != Nil) listBuffer.indexOf(list.head) else -1
   }

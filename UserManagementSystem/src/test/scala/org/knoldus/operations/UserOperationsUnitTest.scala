@@ -41,7 +41,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn false
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn false
 
-    assertThrows[IllegalArgumentException](userOperations.add(user))
+    assertThrows[RuntimeException](userOperations.add(user))
   }
 
   it should "not add as mobile no is invalid" in {
@@ -49,7 +49,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn false
 
-    assertThrows[IllegalArgumentException](userOperations.add(user))
+    assertThrows[RuntimeException](userOperations.add(user))
   }
 
   it should "not add as email id is invalid" in {
@@ -57,7 +57,17 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn false
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
 
-    assertThrows[IllegalArgumentException](userOperations.add(user))
+    assertThrows[RuntimeException](userOperations.add(user))
+  }
+
+  it should "not add as email id and mobile no are valid but user object is sent with uuid" in {
+
+    when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
+    when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
+
+    val userWithId: User = User(Some(UUID.randomUUID()),"Bhavya",UserType.Admin,"bhavya1234",24,"bhavya@gmail.com",9999666658L,Some("Shahdara"))
+
+    assertThrows[RuntimeException](userOperations.add(userWithId))
   }
 
   it should "not add as email id and mobile no are valid but userDb throws exception" in {
@@ -87,11 +97,11 @@ class UserOperationsUnitTest extends AnyFlatSpec {
   /*getById method test cases*/
   "getById" should "throw an exception when user id does not exists" in {
 
-    intercept[NoSuchElementException]{
+    intercept[RuntimeException]{
       when(mockedUserDb.getById(user.id.get)) thenThrow(throw new NoSuchElementException)
     }
 
-    assertThrows[NoSuchElementException](userOperations.getById(user.id.get))
+    assertThrows[RuntimeException](userOperations.getById(user.id.get))
   }
 
   it should "return the user when user id exists" in {
@@ -125,7 +135,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn false
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn false
 
-    assertThrows[IllegalArgumentException](userOperations.update(UUID.randomUUID(),user))
+    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
   }
 
   it should "not update as mobile no is invalid" in {
@@ -133,7 +143,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn false
 
-    assertThrows[IllegalArgumentException](userOperations.update(UUID.randomUUID(),user))
+    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
   }
 
   it should "not update as email id is invalid" in {
@@ -141,28 +151,37 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn false
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
 
-    assertThrows[IllegalArgumentException](userOperations.update(UUID.randomUUID(),user))
+    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
+  }
+
+  it should "not update as email id and mobile no are valid but user object is sent with UUID" in {
+
+    val uuid = UUID.randomUUID()
+    when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
+    when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
+
+    val userWithId: User = User(Some(UUID.randomUUID()),"Bhavya",UserType.Admin,"bhavya1234",24,"bhavya@gmail.com",9999666658L,Some("Shahdara"))
+
+    assertThrows[RuntimeException](userOperations.update(Some(uuid),userWithId))
   }
 
   it should "not update as email id and mobile no are valid but update returns false" in {
 
-    val uuid = UUID.randomUUID()
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
 
-    when(mockedUserDb.update(uuid,user)) thenReturn false
+    when(mockedUserDb.update(user.id,user)) thenReturn false
 
-    assert(!userOperations.update(uuid,user))
+    assert(!userOperations.update(user.id,user))
   }
 
   it should "update the user" in {
 
-    val uuid = UUID.randomUUID()
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
-    when(mockedUserDb.update(uuid,user)) thenReturn true
+    when(mockedUserDb.update(user.id,user)) thenReturn true
 
-    assert(userOperations.update(uuid,user))
+    assert(userOperations.update(user.id,user))
   }
   /*update method test cases ended*/
   /*---------------------------------------------------------------------------*/

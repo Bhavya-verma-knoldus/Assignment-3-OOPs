@@ -26,12 +26,12 @@ class UserOperations(userDb: DAO[User],emailValidator: EmailValidator,mobileNoVa
 
   def add(user: User): UUID ={
 
-    /*user will be added only when email id and mobile no. is valid*/
-    if(emailValidator.emailIdIsValid(user.emailId) && mobileNoValidator.mobileNoIsValid(user.mobileNo)) {
-      userDb.add(user)
+    if(userValid(user)) {
+      val uuid = UUID.randomUUID()
+      userDb.add(user.copy(id=Some(uuid)))
     }
-    else {
-      throw new IllegalArgumentException("email id or mobile no is not valid")
+    else{
+      throw new RuntimeException("Invalid operation")
     }
   }
 
@@ -41,14 +41,13 @@ class UserOperations(userDb: DAO[User],emailValidator: EmailValidator,mobileNoVa
 
   def getAll: List[User] = userDb.getAll
 
-  def update(id:UUID,updatedUser: User): Boolean = {
+  def update(id:Option[UUID],updatedUser: User): Boolean = {
 
-    /*user will be updated only when email id and mobile no. is valid*/
-    if(emailValidator.emailIdIsValid(updatedUser.emailId) && mobileNoValidator.mobileNoIsValid(updatedUser.mobileNo)) {
-      userDb.update(id,updatedUser)
+    if(userValid(updatedUser)) {
+      userDb.update(id,updatedUser.copy(id = id))
     }
     else{
-      throw new IllegalArgumentException("email id or mobile no is not valid")
+      throw new RuntimeException("Invalid operation")
     }
   }
 
@@ -58,5 +57,19 @@ class UserOperations(userDb: DAO[User],emailValidator: EmailValidator,mobileNoVa
 
   def deleteAll(): Boolean = {
     userDb.deleteAll()
+  }
+
+  private def userValid(user: User): Boolean = {
+    user match {
+      case User(None, userName, userType, password, age, emailId, mobileNo, address) =>
+
+        if(emailAndMobileValidator(user)) true else throw new RuntimeException("email id or mobile no is not valid")
+
+      case User(Some(_),_,_,_,_,_,_,_) => false
+    }
+  }
+
+  private def emailAndMobileValidator(user: User): Boolean = {
+    if(emailValidator.emailIdIsValid(user.emailId) && mobileNoValidator.mobileNoIsValid(user.mobileNo)) true else false
   }
 }

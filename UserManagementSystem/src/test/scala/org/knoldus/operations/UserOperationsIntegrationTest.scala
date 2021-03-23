@@ -35,24 +35,24 @@ class UserOperationsIntegrationTest extends AnyFlatSpec {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail",mobileNo = 999966,address = Some("Shahdara"))
 
-    assertThrows[IllegalArgumentException](userOperations.add(user))
+    assertThrows[RuntimeException](userOperations.add(user))
   }
 
   it should "not add as mobile no is invalid" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 999966,address = Some("Shahdara"))
 
-    assertThrows[IllegalArgumentException](userOperations.add(user))
+    assertThrows[RuntimeException](userOperations.add(user))
   }
 
   it should "not add as email id is invalid" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail",mobileNo = 9999666658L,address = Some("Shahdara"))
 
-    assertThrows[IllegalArgumentException](userOperations.add(user))
+    assertThrows[RuntimeException](userOperations.add(user))
   }
 
-  it should "not add as email id and mobile no are valid but userDb throws exception" in {
+  it should "not add as email id and mobile no are valid but user object is sent with UUID" in {
 
     val user: User = User(id = Some(UUID.randomUUID()) ,userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
 
@@ -73,7 +73,7 @@ class UserOperationsIntegrationTest extends AnyFlatSpec {
   /*getById method test cases*/
   "getById" should "throw an exception when user id does not exists" in {
 
-    assertThrows[NoSuchElementException](userOperations.getById(UUID.randomUUID()))
+    assertThrows[RuntimeException](userOperations.getById(UUID.randomUUID()))
   }
 
   it should "return the user when user id exists" in {
@@ -107,28 +107,28 @@ class UserOperationsIntegrationTest extends AnyFlatSpec {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail",mobileNo = 999966,address = Some("Shahdara"))
 
-    assertThrows[IllegalArgumentException](userOperations.update(UUID.randomUUID(),user))
+    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
   }
 
   it should "not update as mobile no is invalid" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 999966,address = Some("Shahdara"))
 
-    assertThrows[IllegalArgumentException](userOperations.update(UUID.randomUUID(),user))
+    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
   }
 
   it should "not update as email id is invalid" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail",mobileNo = 9999666658L,address = Some("Shahdara"))
 
-    assertThrows[IllegalArgumentException](userOperations.update(UUID.randomUUID(),user))
+    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
   }
 
-  it should "not update as email id and mobile no are valid but update returns false" in {
+  it should "not update as email id and mobile no are valid but update throws exception" in {
 
     val user: User = User(id = Some(UUID.randomUUID()) ,userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
 
-    assert(!userOperations.update(user.id.get,user))
+    assertThrows[RuntimeException](userOperations.update(user.id,user))
   }
 
   it should "update the user" in {
@@ -136,9 +136,9 @@ class UserOperationsIntegrationTest extends AnyFlatSpec {
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
     val id = userOperations.add(user)
 
-    val updatedUser: User = User(Some(id),"Bhanu",UserType.Admin,"bhavya1234",24,"bhavya@gmail.com",9999666658L,Some("Shahdara"))
+    val updatedUser: User = User(userName = "Bhanu",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
 
-    assert(userOperations.update(id,updatedUser))
+    assert(userOperations.update(Some(id),updatedUser))
     userOperations.deleteById(id)
   }
   /*update method test cases ended*/

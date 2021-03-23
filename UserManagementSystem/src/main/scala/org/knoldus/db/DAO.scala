@@ -25,7 +25,7 @@ trait DAO[User] {
 
   def getAll: List[User]
 
-  def update(id: UUID,user: User): Boolean
+  def update(id: Option[UUID],user: User): Boolean
 
   def deleteById(id: UUID): Boolean
 

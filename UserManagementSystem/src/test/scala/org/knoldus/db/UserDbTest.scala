@@ -26,17 +26,11 @@ class UserDbTest extends AnyFlatSpec {
   val userDb = new UserDb
 
   /*creating user with UUID*/
-  val userWithId: User = User(Some(UUID.randomUUID()),"Bhavya",UserType.Admin,"bhavya1234",24,"bhavya@gmail.com",9999666658L,Some("Shahdara"))
-
-  /*creating user without UUID*/
-  val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
+  val user: User = User(Some(UUID.randomUUID()),"Bhavya",UserType.Admin,"bhavya1234",24,"bhavya@gmail.com",9999666658L,Some("Shahdara"))
 
   /*add method test cases*/
-  "add" should "not add when UUID is sent with user object" in {
-    assertThrows[RuntimeException](userDb.add(userWithId))
-  }
 
-  it should "add when user object is sent without UUID" in {
+  "add" should "add the user" in {
     val id = userDb.add(user)
     assert(Some(id).nonEmpty)
     userDb.deleteById(id)
@@ -46,7 +40,7 @@ class UserDbTest extends AnyFlatSpec {
 
   /*getById method test cases*/
   "getById" should "not return the user when user id does not exists" in {
-    assertThrows[NoSuchElementException](userDb.getById(UUID.randomUUID()))
+    assertThrows[RuntimeException](userDb.getById(UUID.randomUUID()))
   }
 
   it should "return the user when user id exists" in {
@@ -72,14 +66,14 @@ class UserDbTest extends AnyFlatSpec {
 
   /*update method test cases*/
   "update" should "not update when user id does not exists" in {
-    assert(!userDb.update(UUID.randomUUID(),user))
+    assert(!userDb.update(Some(UUID.randomUUID()),user))
   }
 
   it should "update when user id exists" in {
     val id = userDb.add(user)
     val updatedUser: User = User(Some(id),"Bhavya",UserType.Admin,"bhavya1234",24,"bhavya@gmail.com",9999666658L,Some("Shahdara"))
 
-    assert(userDb.update(id,updatedUser))
+    assert(userDb.update(Some(id),updatedUser))
     userDb.deleteById(id)
   }
   /*update method test cases ended*/
