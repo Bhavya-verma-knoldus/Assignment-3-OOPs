@@ -16,22 +16,24 @@
 
 package org.knoldus.operations
 
-import org.knoldus.db.UserDb
 import org.knoldus.models.{User, UserType}
+import org.knoldus.repo.UserRepo
 import org.knoldus.validator.{EmailValidator, MobileNoValidator}
 import org.mockito.MockitoSugar.{mock, when}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.util.UUID
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 class UserOperationsUnitTest extends AnyFlatSpec {
 
-  /*mocking all the dependent classes*/
   val mockedEmailValidator: EmailValidator = mock[EmailValidator]
   val mockedMobileNoValidator: MobileNoValidator = mock[MobileNoValidator]
-  val mockedUserDb: UserDb = mock[UserDb]
+  val mockedUserRepo: UserRepo = mock[UserRepo]
 
-  val userOperations = new UserOperations(mockedUserDb,mockedEmailValidator,mockedMobileNoValidator)
+  val userOperations = new UserOperations(mockedUserRepo,mockedEmailValidator,mockedMobileNoValidator)
 
   val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
 
@@ -41,7 +43,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn false
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn false
 
-    assertThrows[RuntimeException](userOperations.add(user))
+    assertThrows[RuntimeException](Await.result(userOperations.add(user),5 seconds))
   }
 
   it should "not add as mobile no is invalid" in {
@@ -49,7 +51,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn false
 
-    assertThrows[RuntimeException](userOperations.add(user))
+    assertThrows[RuntimeException](Await.result(userOperations.add(user),5 seconds))
   }
 
   it should "not add as email id is invalid" in {
@@ -57,7 +59,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn false
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
 
-    assertThrows[RuntimeException](userOperations.add(user))
+    assertThrows[RuntimeException](Await.result(userOperations.add(user),5 seconds))
   }
 
   it should "not add as email id and mobile no are valid but user object is sent with uuid" in {
@@ -67,26 +69,26 @@ class UserOperationsUnitTest extends AnyFlatSpec {
 
     val userWithId: User = User(Some(UUID.randomUUID()),"Bhavya",UserType.Admin,"bhavya1234",24,"bhavya@gmail.com",9999666658L,Some("Shahdara"))
 
-    assertThrows[RuntimeException](userOperations.add(userWithId))
+    assertThrows[RuntimeException](Await.result(userOperations.add(userWithId),5 seconds))
   }
 
-  it should "not add as email id and mobile no are valid but userDb throws exception" in {
+  it should "not add as email id and mobile no are valid but userRepo throws exception" in {
 
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
 
     intercept[RuntimeException]{
-      when(mockedUserDb.add(user)) thenThrow(throw new RuntimeException("Invalid operation"))
+      when(mockedUserRepo.add(user)) thenThrow(throw new RuntimeException("Invalid operation"))
     }
 
-    assertThrows[RuntimeException](userOperations.add(user))
+    assertThrows[RuntimeException](Await.result(userOperations.add(user),5 seconds))
   }
 
   it should "add the user" in {
 
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
-    when(mockedUserDb.add(user)) thenReturn UUID.randomUUID()
+    when(mockedUserRepo.add(user)) thenReturn Future(Option(UUID.randomUUID()))
 
     val result = userOperations.add(user)
     assert(Some(result).nonEmpty)
@@ -98,17 +100,18 @@ class UserOperationsUnitTest extends AnyFlatSpec {
   "getById" should "throw an exception when user id does not exists" in {
 
     intercept[RuntimeException]{
-      when(mockedUserDb.getById(user.id.get)) thenThrow(throw new NoSuchElementException)
+      when(mockedUserRepo.getById(user.id)) thenThrow(throw new RuntimeException)
     }
 
-    assertThrows[RuntimeException](userOperations.getById(user.id.get))
+    assertThrows[RuntimeException](Await.result(userOperations.getById(user.id),5 seconds))
   }
 
   it should "return the user when user id exists" in {
     val uuid = UUID.randomUUID()
-    when(mockedUserDb.getById(uuid)) thenReturn List(user)
+    when(mockedUserRepo.getById(Some(uuid))) thenReturn Future(List(user))
 
-    assert(userOperations.getById(uuid).nonEmpty)
+    val result = Await.result(userOperations.getById(Some(uuid)),5 seconds)
+    assert(result.nonEmpty)
   }
   /*getById method test cases ended*/
   /*---------------------------------------------------------------------------*/
@@ -116,15 +119,17 @@ class UserOperationsUnitTest extends AnyFlatSpec {
   /*getAll method test cases*/
   "getAll" should "return empty list when ListBuffer is empty" in {
 
-    when(mockedUserDb.getAll) thenReturn List()
+    when(mockedUserRepo.getAll) thenReturn Future(List())
 
-    assert(userOperations.getAll.isEmpty)
+    val result = Await.result(userOperations.getAll,5 seconds)
+    assert(result.isEmpty)
   }
 
   it should "return list of users when ListBuffer is not empty" in {
-    when(mockedUserDb.getAll) thenReturn List(user)
+    when(mockedUserRepo.getAll) thenReturn Future(List(user))
 
-    assert(userOperations.getAll.nonEmpty)
+    val result = Await.result(userOperations.getAll,5 seconds)
+    assert(result.nonEmpty)
   }
   /*getAll method test cases ended*/
   /*---------------------------------------------------------------------------*/
@@ -135,7 +140,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn false
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn false
 
-    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
+    assertThrows[RuntimeException](Await.result(userOperations.update(Some(UUID.randomUUID()),user),5 seconds))
   }
 
   it should "not update as mobile no is invalid" in {
@@ -143,7 +148,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn false
 
-    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
+    assertThrows[RuntimeException](Await.result(userOperations.update(Some(UUID.randomUUID()),user),5 seconds))
   }
 
   it should "not update as email id is invalid" in {
@@ -151,7 +156,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn false
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
 
-    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
+    assertThrows[RuntimeException](Await.result(userOperations.update(Some(UUID.randomUUID()),user),5 seconds))
   }
 
   it should "not update as email id and mobile no are valid but user object is sent with UUID" in {
@@ -162,7 +167,7 @@ class UserOperationsUnitTest extends AnyFlatSpec {
 
     val userWithId: User = User(Some(UUID.randomUUID()),"Bhavya",UserType.Admin,"bhavya1234",24,"bhavya@gmail.com",9999666658L,Some("Shahdara"))
 
-    assertThrows[RuntimeException](userOperations.update(Some(uuid),userWithId))
+    assertThrows[RuntimeException](Await.result(userOperations.update(Some(uuid),userWithId),5 seconds))
   }
 
   it should "not update as email id and mobile no are valid but update returns false" in {
@@ -170,18 +175,20 @@ class UserOperationsUnitTest extends AnyFlatSpec {
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
 
-    when(mockedUserDb.update(user.id,user)) thenReturn false
+    when(mockedUserRepo.update(user.id,user)) thenReturn Future(false)
 
-    assert(!userOperations.update(user.id,user))
+    val result = Await.result(userOperations.update(user.id,user), 5 seconds)
+    assert(!result)
   }
 
   it should "update the user" in {
 
     when(mockedEmailValidator.emailIdIsValid(user.emailId)) thenReturn true
     when(mockedMobileNoValidator.mobileNoIsValid(user.mobileNo)) thenReturn true
-    when(mockedUserDb.update(user.id,user)) thenReturn true
+    when(mockedUserRepo.update(user.id,user)) thenReturn Future(true)
 
-    assert(userOperations.update(user.id,user))
+    val result = Await.result(userOperations.update(user.id,user), 5 seconds)
+    assert(result)
   }
   /*update method test cases ended*/
   /*---------------------------------------------------------------------------*/
@@ -190,16 +197,18 @@ class UserOperationsUnitTest extends AnyFlatSpec {
   "deleteByID" should "not delete the user when user id is not valid" in {
 
     val uuid = UUID.randomUUID()
-    when(mockedUserDb.deleteById(uuid)) thenReturn false
+    when(mockedUserRepo.deleteById(Some(uuid))) thenReturn Future(false)
 
-    assert(!userOperations.deleteById(uuid))
+    val result = Await.result(userOperations.deleteById(Some(uuid)),5 seconds)
+    assert(!result)
   }
 
   it should "delete the user when user id is valid" in {
     val uuid = UUID.randomUUID()
-    when(mockedUserDb.deleteById(uuid)) thenReturn true
+    when(mockedUserRepo.deleteById(Some(uuid))) thenReturn Future(true)
 
-    assert(userOperations.deleteById(uuid))
+    val result = Await.result(userOperations.deleteById(Some(uuid)),5 seconds)
+    assert(result)
   }
   /*deleteByID method test cases ended*/
   /*---------------------------------------------------------------------------*/
@@ -207,15 +216,17 @@ class UserOperationsUnitTest extends AnyFlatSpec {
   /*deleteAll method test cases*/
   "deleteAll" should "not delete all users as ListBuffer is empty" in {
 
-    when(mockedUserDb.deleteAll()) thenReturn false
+    when(mockedUserRepo.deleteAll()) thenReturn Future(false)
 
-    assert(!userOperations.deleteAll())
+    val result = Await.result(userOperations.deleteAll(),5 seconds)
+    assert(!result)
   }
 
   it should "delete all users as ListBuffer is not empty" in {
-    when(mockedUserDb.deleteAll()) thenReturn true
+    when(mockedUserRepo.deleteAll()) thenReturn Future(true)
 
-    assert(userOperations.deleteAll())
+    val result = Await.result(userOperations.deleteAll(),5 seconds)
+    assert(result)
   }
   /*deleteAll method test cases ended*/
   /*---------------------------------------------------------------------------*/

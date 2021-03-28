@@ -20,40 +20,42 @@ import org.knoldus.models.User
 
 import java.util.UUID
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.Future
 import scala.math.Ordered.orderingToOrdered
 import scala.util.{Failure, Success, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class UserDb extends DAO[User]{
+class UserTable {
 
-  private val listBuffer = new ListBuffer[User]()
+  private val listBuffer = ListBuffer.empty[User]
 
-  override def add(user: User): UUID = {
+  def add(user: User): Future[Option[UUID]] = Future{
     Try { listBuffer.append(user) } match {
-      case Success(_) => listBuffer.last.id.get
+      case Success(_) => listBuffer.last.id
       case Failure(_) => throw new RuntimeException("Invalid Operation")
     }
   }
 
-  override def getById(id: UUID): List[User] = {
-    val list = filterListById(Some(id))
+  def getById(id: Option[UUID]): Future[List[User]] = Future{
+    val list = filterListById(id)
     if(list != Nil) list else throw new RuntimeException("User does not exist")
   }
 
-  override def getAll: List[User] = {
+  def getAll: Future[List[User]] = Future{
     listBuffer.toList
   }
 
-  override def update(id: Option[UUID], updatedUser: User): Boolean = {
+  def update(id: Option[UUID], updatedUser: User): Future[Boolean] = Future{
     val index = findIndexById(id)
     if(index != -1) { listBuffer.update(index,updatedUser); true } else false
   }
 
-  override def deleteById(id: UUID): Boolean = {
-    val index = findIndexById(Some(id))
+  def deleteById(id: Option[UUID]): Future[Boolean] = Future{
+    val index = findIndexById(id)
     if(index != -1) { listBuffer.remove(index); true } else false
   }
 
-  override def deleteAll(): Boolean = {
+  def deleteAll(): Future[Boolean] = Future{
     if(listBuffer.nonEmpty) { listBuffer.remove(0,listBuffer.length); true } else false
   }
 

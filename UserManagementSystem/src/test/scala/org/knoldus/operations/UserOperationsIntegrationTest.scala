@@ -16,56 +16,60 @@
 
 package org.knoldus.operations
 
-import org.knoldus.db.UserDb
+import org.knoldus.db.UserTable
+import org.knoldus.repo.UserRepo
 import org.knoldus.models.{User, UserType}
 import org.knoldus.validator.{EmailValidator, MobileNoValidator}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.util.UUID
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class UserOperationsIntegrationTest extends AnyFlatSpec {
 
   val emailValidator = new EmailValidator
   val mobileValidator = new MobileNoValidator
-  val userDb = new UserDb
-  val userOperations = new UserOperations(userDb,emailValidator,mobileValidator)
+  val userTable = new UserTable
+  val userRepo = new UserRepo(userTable)
+  val userOperations = new UserOperations(userRepo,emailValidator,mobileValidator)
 
   /*add method test cases*/
   "add" should "not add as mobile no and email id both are invalid" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail",mobileNo = 999966,address = Some("Shahdara"))
 
-    assertThrows[RuntimeException](userOperations.add(user))
+    assertThrows[RuntimeException](Await.result(userOperations.add(user),5 seconds))
   }
 
   it should "not add as mobile no is invalid" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 999966,address = Some("Shahdara"))
 
-    assertThrows[RuntimeException](userOperations.add(user))
+    assertThrows[RuntimeException](Await.result(userOperations.add(user),5 seconds))
   }
 
   it should "not add as email id is invalid" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail",mobileNo = 9999666658L,address = Some("Shahdara"))
 
-    assertThrows[RuntimeException](userOperations.add(user))
+    assertThrows[RuntimeException](Await.result(userOperations.add(user),5 seconds))
   }
 
   it should "not add as email id and mobile no are valid but user object is sent with UUID" in {
 
     val user: User = User(id = Some(UUID.randomUUID()) ,userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
 
-    assertThrows[RuntimeException](userOperations.add(user))
+    assertThrows[RuntimeException](Await.result(userOperations.add(user),5 seconds))
   }
 
   it should "add the user" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
 
-    val id = userOperations.add(user)
+    val id = Await.result(userOperations.add(user),5 seconds)
     assert(Some(id).nonEmpty)
-    userOperations.deleteById(id)
+    Await.result(userOperations.deleteById(id),5 seconds)
   }
   /*add method test cases ended*/
   /*---------------------------------------------------------------------------*/
@@ -73,31 +77,34 @@ class UserOperationsIntegrationTest extends AnyFlatSpec {
   /*getById method test cases*/
   "getById" should "throw an exception when user id does not exists" in {
 
-    assertThrows[RuntimeException](userOperations.getById(UUID.randomUUID()))
+    assertThrows[RuntimeException](Await.result(userOperations.getById(Some(UUID.randomUUID())),5 seconds))
   }
 
   it should "return the user when user id exists" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
-    val id = userOperations.add(user)
+    val id = Await.result(userOperations.add(user),5 seconds)
 
-    assert(userOperations.getById(id).nonEmpty)
-    userOperations.deleteById(id)
+    val result = Await.result(userOperations.getById(id),5 seconds)
+    assert(result.nonEmpty)
+    Await.result(userOperations.deleteById(id),5 seconds)
   }
   /*getById method test cases ended*/
   /*---------------------------------------------------------------------------*/
 
   /*getAll method test cases*/
   "getAll" should "return empty list when ListBuffer is empty" in {
-    assert(userOperations.getAll.isEmpty)
+    val result = Await.result(userOperations.getAll,5 seconds)
+    assert(result.isEmpty)
   }
 
   it should "return list of users when ListBuffer is not empty" in {
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
-    val id = userOperations.add(user)
+    val id = Await.result(userOperations.add(user),5 seconds)
 
-    assert(userOperations.getAll.nonEmpty)
-    userOperations.deleteById(id)
+    val result = Await.result(userOperations.getAll,5 seconds)
+    assert(result.nonEmpty)
+    Await.result(userOperations.deleteById(id),5 seconds)
   }
   /*getAll method test cases ended*/
   /*---------------------------------------------------------------------------*/
@@ -107,54 +114,57 @@ class UserOperationsIntegrationTest extends AnyFlatSpec {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail",mobileNo = 999966,address = Some("Shahdara"))
 
-    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
+    assertThrows[RuntimeException](Await.result(userOperations.update(Some(UUID.randomUUID()),user),5 seconds))
   }
 
   it should "not update as mobile no is invalid" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 999966,address = Some("Shahdara"))
 
-    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
+    assertThrows[RuntimeException](Await.result(userOperations.update(Some(UUID.randomUUID()),user),5 seconds))
   }
 
   it should "not update as email id is invalid" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail",mobileNo = 9999666658L,address = Some("Shahdara"))
 
-    assertThrows[RuntimeException](userOperations.update(Some(UUID.randomUUID()),user))
+    assertThrows[RuntimeException](Await.result(userOperations.update(Some(UUID.randomUUID()),user),5 seconds))
   }
 
   it should "not update as email id and mobile no are valid but update throws exception" in {
 
     val user: User = User(id = Some(UUID.randomUUID()) ,userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
 
-    assertThrows[RuntimeException](userOperations.update(user.id,user))
+    assertThrows[RuntimeException](Await.result(userOperations.update(user.id,user),5 seconds))
   }
 
   it should "update the user" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
-    val id = userOperations.add(user)
+    val id = Await.result(userOperations.add(user),5 seconds)
 
     val updatedUser: User = User(userName = "Bhanu",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
 
-    assert(userOperations.update(Some(id),updatedUser))
-    userOperations.deleteById(id)
+    val result = Await.result(userOperations.update(id,updatedUser),5 seconds)
+    assert(result)
+    Await.result(userOperations.deleteById(id),5 seconds)
   }
   /*update method test cases ended*/
   /*---------------------------------------------------------------------------*/
 
   /*deleteByID method test cases*/
   "deleteByID" should "not delete the user when user id is not valid" in {
-    assert(!userOperations.deleteById(UUID.randomUUID()))
+    val result = Await.result(userOperations.deleteById(Some(UUID.randomUUID())),5 seconds)
+    assert(!result)
   }
 
   it should "delete the user when user id is valid" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
-    val id = userOperations.add(user)
+    val id = Await.result(userOperations.add(user),5 seconds)
 
-    assert(userOperations.deleteById(id))
+    val result = Await.result(userOperations.deleteById(id),5 seconds)
+    assert(result)
   }
   /*deleteByID method test cases ended*/
   /*---------------------------------------------------------------------------*/
@@ -162,15 +172,17 @@ class UserOperationsIntegrationTest extends AnyFlatSpec {
   /*deleteAll method test cases*/
   "deleteAll" should "not delete all users as ListBuffer is empty" in {
 
-    assert(!userOperations.deleteAll())
+    val result = Await.result(userOperations.deleteAll(),5 seconds)
+    assert(!result)
   }
 
   it should "delete all users as ListBuffer is not empty" in {
 
     val user: User = User(userName = "Bhavya",userType = UserType.Admin,password = "bhavya1234",age = 24,emailId = "bhavya@gmail.com",mobileNo = 9999666658L,address = Some("Shahdara"))
-    userOperations.add(user)
+    Await.result(userOperations.add(user),5 seconds)
 
-    assert(userOperations.deleteAll())
+    val result = Await.result(userOperations.deleteAll(),5 seconds)
+    assert(result)
   }
   /*deleteAll method test cases ended*/
   /*---------------------------------------------------------------------------*/

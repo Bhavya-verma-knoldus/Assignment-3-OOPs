@@ -14,20 +14,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.knoldus.db
+package org.knoldus.repo
 
 import java.util.UUID
+import scala.concurrent.Future
 
 trait DAO[User] {
-  def add(user: User): UUID
+  def add(user: User): Future[Option[UUID]]
 
-  def getById(id: UUID): List[User]
+  def getById(id: Option[UUID]): Future[List[User]]
 
-  def getAll: List[User]
+  def getAll: Future[List[User]]
 
-  def update(id: Option[UUID],user: User): Boolean
+  def update(id: Option[UUID],user: User): Future[Boolean]
 
-  def deleteById(id: UUID): Boolean
+  def deleteById(id: Option[UUID]): Future[Boolean]
 
-  def deleteAll(): Boolean
+  def deleteAll(): Future[Boolean]
 }

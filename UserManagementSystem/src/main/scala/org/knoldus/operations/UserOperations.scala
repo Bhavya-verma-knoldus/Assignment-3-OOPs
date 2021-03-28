@@ -16,47 +16,48 @@
 
 package org.knoldus.operations
 
-import org.knoldus.db.DAO
+import org.knoldus.repo.DAO
 import org.knoldus.models.User
 import org.knoldus.validator.{EmailValidator, MobileNoValidator}
 
 import java.util.UUID
+import scala.concurrent.Future
 
-class UserOperations(userDb: DAO[User],emailValidator: EmailValidator,mobileNoValidator: MobileNoValidator) {
+class UserOperations(userRepo: DAO[User],emailValidator: EmailValidator,mobileNoValidator: MobileNoValidator) {
 
-  def add(user: User): UUID ={
+  def add(user: User): Future[Option[UUID]] ={
 
     if(userValid(user)) {
       val uuid = UUID.randomUUID()
-      userDb.add(user.copy(id=Some(uuid)))
+      userRepo.add(user.copy(id=Some(uuid)))
     }
     else{
       throw new RuntimeException("Invalid operation")
     }
   }
 
-  def getById(id: UUID): List[User] = {
-    userDb.getById(id)
+  def getById(id: Option[UUID]): Future[List[User]] = {
+    userRepo.getById(id)
   }
 
-  def getAll: List[User] = userDb.getAll
+  def getAll: Future[List[User]] = userRepo.getAll
 
-  def update(id:Option[UUID],updatedUser: User): Boolean = {
+  def update(id:Option[UUID],updatedUser: User): Future[Boolean] = {
 
     if(userValid(updatedUser)) {
-      userDb.update(id,updatedUser.copy(id = id))
+      userRepo.update(id,updatedUser.copy(id = id))
     }
     else{
       throw new RuntimeException("Invalid operation")
     }
   }
 
-  def deleteById(id: UUID): Boolean = {
-    userDb.deleteById(id)
+  def deleteById(id: Option[UUID]): Future[Boolean] = {
+    userRepo.deleteById(id)
   }
 
-  def deleteAll(): Boolean = {
-    userDb.deleteAll()
+  def deleteAll(): Future[Boolean] = {
+    userRepo.deleteAll()
   }
 
   private def userValid(user: User): Boolean = {
